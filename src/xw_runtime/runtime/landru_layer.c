@@ -3,26 +3,39 @@
 #include "xw/flight/flight_display.h"
 #include "xw/landru_config.h"
 #include "xw_runtime/runtime/presentation.h"
+#include <aeron/scene/present.h>
 #include <landru/presentation.h>
 #include <landru/surface.h>
 
 static AeronPaletteEntry palette[256];
 static uint32_t generation;
 static uint64_t previous_generation;
+static float palette_brightness = 1.0f;
 
 void XwLandruLayer_Init(void) { generation = 0; }
 
 void XwLandruLayer_Submit(void) {
 	LandruPresentedFrame frame;
+	float brightness;
 	if (g_frontendDisplayWndProcMode == 0 || Aeron_FatalErrorRequested() ||
 		!xsurface_Get_Presented_Frame(&frame))
 		return;
-	if (!generation || frame.generation != previous_generation) {
+	brightness = AeronScenePresent_Brightness();
+	/* VolkyXWCD v7: brightness — brighten the expanded palette entries
+	 * with the half-gamma curve (identity at 1.0). The palette is
+	 * rebuilt when the frame generation changes OR the brightness
+	 * changes, and the layer generation bumps with it so the upload
+	 * cache re-uploads the re-paletted frame. */
+	if (!generation || frame.generation != previous_generation || brightness != palette_brightness) {
 		previous_generation = frame.generation;
+		palette_brightness = brightness;
 		for (int i = 0; i < 256; ++i) {
 			uint8_t r = frame.palette[i * 3], g = frame.palette[i * 3 + 1], b = frame.palette[i * 3 + 2];
-			palette[i] = (AeronPaletteEntry) { (uint8_t)((r << 2) | (r >> 4)), (uint8_t)((g << 2) | (g >> 4)),
-											   (uint8_t)((b << 2) | (b >> 4)), 255 };
+			palette[i] = (AeronPaletteEntry) {
+				AeronScenePresent_BrightenSrgb8((uint8_t)((r << 2) | (r >> 4))),
+				AeronScenePresent_BrightenSrgb8((uint8_t)((g << 2) | (g >> 4))),
+				AeronScenePresent_BrightenSrgb8((uint8_t)((b << 2) | (b >> 4))), 255
+			};
 		}
 		if (++generation == 0)
 			++generation;

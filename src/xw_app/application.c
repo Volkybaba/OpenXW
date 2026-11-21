@@ -4,6 +4,7 @@
 #include "xw_app/setup.h"
 #include "xw_app/ui.h"
 #include "xw_remaster/xw_remaster.h"
+#include "xw/render/screenshot.h"
 #include "xw_runtime/config/config.h"
 #include "xw_runtime/input/capture.h"
 #include "xw_runtime/input/input_bridge.h"
@@ -13,6 +14,7 @@
 #include "xw_runtime/snapshot/render_snapshot.h"
 #include "xw_runtime/storage/storage.h"
 #include <aeron/log.h>
+#include <aeron/scene/present.h>
 #include <stdio.h>
 
 static uint64_t XwApplication_PresentationIntervalUs(void) {
@@ -56,6 +58,7 @@ static int XwApplication_FrameLoop(void) {
 		XwPresentation_SubmitCursor();
 		if (XwSettingsMenu_Open() && !menu_opened)
 			XwSettingsMenu_Frame(input, (float)delta_us * 1e-6f);
+		XwScreenshot_Update(input);
 		if (!Aeron_Present()) {
 			Aeron_RequestFatalRendererError("Frame presentation");
 			break;
@@ -80,6 +83,8 @@ static int XwApplication_ApplyPresentation(char* error, size_t capacity) {
 	Aeron_SetOutputSdrContentGamma(settings->sdr_gamma < 0 ? 2.2f : settings->sdr_gamma);
 	Aeron_SetOutputPaperWhiteNits(settings->paper_white_nits);
 #endif
+	/* VolkyXWCD v7: user brightness (scene exposure + classic CPU brighten). */
+	AeronScenePresent_SetBrightness(settings->brightness);
 	return 1;
 }
 
@@ -89,6 +94,7 @@ int XwApplication_Run(const XwLaunchOptions* options) {
 #else
 	XwKeyboardMapping_SetPolicy(false);
 #endif
+	Aeron_LogInfo("xw.app", "VolkyXWCD build v8");
 	AeronConfig config;
 	XwAppUi ui = { 0 };
 	char error[1024] = { 0 };

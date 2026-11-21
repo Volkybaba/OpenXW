@@ -188,6 +188,7 @@ set(XW_RECOVERED_SOURCES
     src/xw/render/rotscale.c
     src/xw/render/rtsrgb.c
     src/xw/render/rtsvga2.c
+    src/xw/render/screenshot.c
     src/xw/render/shade.c
     src/xw/render/std3d.c
     src/xw/render/sw3d.c
@@ -842,6 +843,7 @@ set(XW_HEADERS
     src/xw/render/rotscale.h
     src/xw/render/rtsrgb.h
     src/xw/render/rtsvga2.h
+    src/xw/render/screenshot.h
     src/xw/render/shade.h
     src/xw/render/std3d.h
     src/xw/render/sw3d.h

@@ -1,6 +1,7 @@
 /* Host-output apply/rollback follows OpenXvT; game surfaces keep their own lifetime. */
 #include "xw_app/settings/video_options.h"
 #include <aeron/aeron.h>
+#include <aeron/scene/present.h>
 #include <stdio.h>
 
 static bool Apply(const XwSettings* settings) {
@@ -12,6 +13,8 @@ static bool Apply(const XwSettings* settings) {
 	Aeron_SetOutputSdrContentGamma(p->sdr_gamma < 0 ? 2.2f : p->sdr_gamma);
 	Aeron_SetOutputPaperWhiteNits(p->paper_white_nits);
 #endif
+	/* VolkyXWCD v7: user brightness (scene exposure + classic CPU brighten). */
+	AeronScenePresent_SetBrightness(p->brightness);
 	return true;
 }
 

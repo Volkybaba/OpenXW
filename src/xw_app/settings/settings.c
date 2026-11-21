@@ -24,8 +24,8 @@ static struct {
 	XwSettings draft;
 	XwControllerSettings controller;
 	XwKeyboardSettings keyboard;
-	bool ready, open, close_requested, exit_requested, captures;
-	int page, exit_confirmation, observed_fullscreen;
+	bool ready, open, close_requested, exit_requested, captures, just_opened;
+	int page, exit_confirmation, abort_confirmation, observed_fullscreen;
 	char error[1024];
 
 	struct {
@@ -67,6 +67,7 @@ void XwSettingsMenu_Show(void) {
 	if (!menu.ready || menu.open)
 		return;
 	menu.open = true;
+	menu.just_opened = true;
 	menu.draft = *XwConfig_Settings();
 	menu.observed_fullscreen = menu.draft.fullscreen = Aeron_Fullscreen();
 	XwControllerSettings_Open(&menu.controller, &menu.draft);
@@ -82,12 +83,15 @@ void XwSettingsMenu_RequestClose(void) {
 		menu.close_requested = true;
 }
 
+void XwSettingsMenu_RequestAbortConfirmation(void) { menu.abort_confirmation = 1; }
+
 static void CompleteClose(void) {
 	XwKeyboardSettings_CancelCapture(&menu.keyboard, menu.ui);
 	XwControllerSettings_CancelCapture(&menu.controller, menu.ui);
 	XwInstallationPage_CancelPicker();
-	menu.open = menu.close_requested = menu.captures = false;
+	menu.open = menu.close_requested = menu.captures = menu.just_opened = false;
 	menu.exit_confirmation = 0;
+	menu.abort_confirmation = 0;
 	XwPort_SetSettingsOpen(0);
 }
 
@@ -237,6 +241,23 @@ static void ExitConfirmation(AeronUiContext* ui) {
 	AeronUi_EndModal(ui);
 }
 
+static void AbortConfirmation(AeronUiContext* ui) {
+	if (!AeronUi_BeginModal(ui, "ABORT MISSION", &menu.abort_confirmation, NULL))
+		return;
+	AeronUi_Help(ui, "Abort mission and return to debrief?");
+	AeronUi_BeginColumns(ui, 2, NULL);
+	if (AeronUi_Button(ui, "Cancel"))
+		menu.abort_confirmation = 0;
+	AeronUi_NextColumn(ui);
+	if (AeronUi_Button(ui, "Abort Mission##confirm")) {
+		menu.abort_confirmation = 0;
+		XwFlightSim_RequestAbort();
+		XwSettingsMenu_RequestClose();
+	}
+	AeronUi_EndColumns(ui);
+	AeronUi_EndModal(ui);
+}
+
 static void PendingSave(AeronUiContext* ui) {
 	AeronUi_Error(ui, XwPreferences_SaveError());
 	if (AeronUi_Button(ui, "Retry saving preferences")) {
@@ -250,6 +271,18 @@ static void PendingSave(AeronUiContext* ui) {
 			menu.error[0] = 0;
 		}
 	}
+}
+
+static bool SettingsOpeningStillHeld(const AeronInputSnapshot* input) {
+	if (!input)
+		return false;
+	if (input->key_down[AERON_KEY_ESCAPE])
+		return true;
+	for (int i = 0; i < AERON_CONTROLLER_MAX; ++i)
+		if (input->controllers[i].connected &&
+		    (input->controllers[i].gamepad_buttons & (1u << AERON_GAMEPAD_BUTTON_BACK)))
+			return true;
+	return false;
 }
 
 void XwSettingsMenu_Frame(const AeronInputSnapshot* input, float seconds) {
@@ -314,12 +347,18 @@ void XwSettingsMenu_Frame(const AeronInputSnapshot* input, float seconds) {
 			XwKeyboardSettings_DrawModals(&menu.keyboard, ui);
 		if (menu.exit_confirmation)
 			ExitConfirmation(ui);
+		if (menu.abort_confirmation)
+			AbortConfirmation(ui);
 		AeronUi_EndWindow(ui);
 	}
 	XwInstallationPage_DrawPicker(ui);
 	AeronUiOutput output = AeronUi_EndFrame(ui);
 	menu.captures = output.capture_all != 0;
-	if (output.cancel_pressed)
+	if (menu.just_opened) {
+		/* Acilis basisinden gelen tuslari (gec ESC kenari) yoksay. */
+		if (!SettingsOpeningStillHeld(input))
+			menu.just_opened = false;
+	} else if (output.cancel_pressed)
 		XwSettingsMenu_RequestClose();
 	if (!AeronUi_Submit(ui))
 		Aeron_RequestFatalRendererError("Settings submission");

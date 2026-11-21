@@ -676,6 +676,25 @@ void register_iuser_Register(Input* input, int context) {
 	}
 }
 
+static void register_Step_Pilot_Page(int16_t direction) {
+	if (direction < 0) {
+		if (g_RegisterCurrentPage > 0) {
+			--g_RegisterCurrentPage;
+			xinput_Refresh_System_Inputs();
+		} else {
+			g_RegisterCurrentPage = g_RegisterPageCount - 1;
+		}
+	} else if (g_RegisterCurrentPage < g_RegisterPageCount - 1) {
+		++g_RegisterCurrentPage;
+	} else {
+		g_RegisterCurrentPage = 0;
+	}
+	if (g_RegisterPageCount > 1) {
+		g_RegisterPilotOffset = REGISTER_PILOT_VISIBLE_ROWS * g_RegisterCurrentPage;
+		xinpattr_Refresh_Input(g_RegisterPageInput);
+	}
+}
+
 // FUNCTION: XW 0x45CEF0
 int16_t register_iupdate_Pilot_List(Input* input, Rect* frame, Rect* clip, int16_t key, int leftEvent,
 									int rightEvent, int16_t x, int16_t y) {
@@ -686,8 +705,17 @@ int16_t register_iupdate_Pilot_List(Input* input, Rect* frame, Rect* clip, int16
 	(void)frame;
 	(void)clip;
 	(void)x;
-	if (key != 0)
+	if (key != 0) {
+		if (key == REGISTER_KEY_LEFT || key == REGISTER_KEY_UP) {
+			register_Step_Pilot_Page(-1);
+			return 1;
+		}
+		if (key == REGISTER_KEY_RIGHT || key == REGISTER_KEY_DOWN) {
+			register_Step_Pilot_Page(1);
+			return 1;
+		}
 		return 0;
+	}
 	mouseEvent = leftEvent;
 	if (mouseEvent == 0)
 		mouseEvent = rightEvent;
@@ -807,22 +835,7 @@ void register_iuser_Pilot_Button(Input* input, int unusedContext) {
 		return;
 	id = input->id;
 	if (id < REGISTER_PILOT_BUTTON_LOG) {
-		if (id == REGISTER_PILOT_BUTTON_LEFT) {
-			if (g_RegisterCurrentPage > 0) {
-				--g_RegisterCurrentPage;
-				xinput_Refresh_System_Inputs();
-			} else {
-				g_RegisterCurrentPage = g_RegisterPageCount - 1;
-			}
-		} else if (g_RegisterCurrentPage < g_RegisterPageCount - 1) {
-			++g_RegisterCurrentPage;
-		} else {
-			g_RegisterCurrentPage = 0;
-		}
-		if (g_RegisterPageCount > 1) {
-			g_RegisterPilotOffset = REGISTER_PILOT_VISIBLE_ROWS * g_RegisterCurrentPage;
-			xinpattr_Refresh_Input(g_RegisterPageInput);
-		}
+		register_Step_Pilot_Page(id == REGISTER_PILOT_BUTTON_LEFT ? -1 : 1);
 	} else if (id == REGISTER_PILOT_BUTTON_DELETE) {
 		register_Do_Delete_Dialog(XwRegister_CompletePilotDeletion, NULL);
 	} else {

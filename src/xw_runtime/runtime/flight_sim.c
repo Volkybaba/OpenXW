@@ -110,6 +110,8 @@ int XwFlightSim_IsPlayerControl(void) {
 
 int XwFlightSim_IsPaused(void) { return active_sim && active_sim->frame.input.phase == XW_INPUT_PAUSE; }
 
+void XwFlightSim_RequestAbort(void) { g_missionRuntimeState.flightExitRequested = XW_EXIT_REQUEST_ABORT; }
+
 static void sim_setup(FlightEntryMode entryMode) {
 	XwObjectTypeId objectType;
 	int craftIndex, brightness, i;

@@ -19,6 +19,7 @@ typedef struct XwFlightInput {
 	int16_t savedMusicVolume;
 	uint8_t flags;
 	uint16_t throttle;
+	uint8_t pause_opening_held;
 } XwFlightInput;
 
 /* Service any child tasks before resuming. Returns 0 while suspended. */

@@ -69,7 +69,7 @@ void XwHostConfig_InitAeron(const XwLaunchOptions* options, AeronConfig* config)
 	memset(config, 0, sizeof(*config));
 	config->org_name = "TotallyOpen";
 	config->app_name = "OpenXW";
-	config->window_title = "OpenXW";
+	config->window_title = "VolkyXWCD";
 	config->window_icon_bmp = xw_window_icon_bmp;
 	config->window_icon_bmp_size = sizeof xw_window_icon_bmp;
 	config->resource_root = options ? options->resource_root : NULL;

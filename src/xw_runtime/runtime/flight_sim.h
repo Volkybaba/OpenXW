@@ -9,6 +9,7 @@ void XwFlightSim_Begin(FlightEntryMode entryMode);
 int XwFlightSim_IsActive(void);
 int XwFlightSim_IsPlayerControl(void);
 int XwFlightSim_IsPaused(void);
+void XwFlightSim_RequestAbort(void);
 #ifdef __cplusplus
 }
 #endif

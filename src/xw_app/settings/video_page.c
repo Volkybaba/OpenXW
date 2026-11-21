@@ -12,6 +12,17 @@ static void HostControls(AeronUiContext* ui, XwSettings* draft) {
 	AeronUi_Header(ui, "Display");
 	AeronUi_Toggle(ui, "Fullscreen", &draft->fullscreen);
 	AeronUi_Toggle(ui, "HDR output", &draft->presentation.hdr_output);
+	/* VolkyXWCD v7: brightness 50-300%, 25% steps; 100% is identity.
+	 * Applies when the menu closes (Commit -> XwVideoOptions_Apply). */
+	{
+		int brightness = (int)(draft->presentation.brightness * 100.0f + 0.5f);
+		if (brightness < 50)
+			brightness = 50;
+		if (brightness > 300)
+			brightness = 300;
+		if (AeronUi_SliderInt(ui, "Brightness", &brightness, 50, 300, 25, "%d%%"))
+			draft->presentation.brightness = (float)brightness / 100.0f;
+	}
 	if (draft->presentation.hdr_output && !Aeron_OutputHdrEnabled())
 		AeronUi_Help(ui, Aeron_OutputHdrStatusName(Aeron_OutputHdrStatus()));
 #ifndef __APPLE__
@@ -144,6 +155,7 @@ void XwVideoPage_Draw(AeronUiContext* ui, const AeronInputSnapshot* input) {
 		const XwSettings* defaults = XwConfig_DefaultSettings();
 		draft->fullscreen = defaults->fullscreen;
 		draft->presentation.hdr_output = defaults->presentation.hdr_output;
+		draft->presentation.brightness = defaults->presentation.brightness;
 		draft->presentation.sdr_gamma = defaults->presentation.sdr_gamma;
 		draft->presentation.paper_white_nits = defaults->presentation.paper_white_nits;
 		RestoreFlightDefaults(draft, &defaults->render);

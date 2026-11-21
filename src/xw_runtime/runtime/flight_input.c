@@ -26,6 +26,7 @@
 #include "xw/flight/xw.h"
 #include "xw/math/math2.h"
 #include "xw/util/shared.h"
+#include <aeron/aeron.h>
 #include <string.h>
 
 static uint16_t read_input_word(const uint8_t* data) {
@@ -84,6 +85,22 @@ static void apply_player_input(const XwFlightInput* input) {
 		XwFlightControls_ApplyThrottle(input);
 }
 
+static bool PauseOpeningStillHeld(void) {
+	const AeronInputSnapshot* input = Aeron_InputSnapshot();
+	if (!input)
+		return false;
+	/* SDL scancode 19 == P; this aeron enum only names a sparse subset. */
+	if (input->key_down[AERON_KEY_RETURN] || input->key_down[AERON_KEY_KP_ENTER] ||
+	    input->key_down[19])
+		return true;
+	for (int i = 0; i < AERON_CONTROLLER_MAX; ++i) {
+		if (input->controllers[i].connected &&
+		    (input->controllers[i].gamepad_buttons & (1u << AERON_GAMEPAD_BUTTON_START)))
+			return true;
+	}
+	return false;
+}
+
 int XwFlightInput_Tick(XwFlightInput* state) {
 	int16_t optionsVolume;
 	uint16_t hudStateLive;
@@ -95,6 +112,13 @@ int XwFlightInput_Tick(XwFlightInput* state) {
 	uint16_t target;
 
 	if (state->phase == XW_INPUT_PAUSE) {
+		if (state->pause_opening_held) {
+			while (feinput_getrawinput() != 0) {
+			}
+			if (!PauseOpeningStillHeld())
+				state->pause_opening_held = 0;
+			return 0;
+		}
 		pauseKey = feinput_getrawinput();
 		switch (pauseKey) {
 			case '\b':
@@ -225,6 +249,7 @@ int XwFlightInput_Tick(XwFlightInput* state) {
 					msg_messageprintf(XW_MSG_MISSION_PAUSED);
 					XwFlightControls_ResetThrottle();
 					state->phase = XW_INPUT_PAUSE;
+					state->pause_opening_held = 1;
 					return 0;
 				case 'v':
 					if (g_hyperspaceflag == 0 && (uint8_t)g_flightDisplaySurfaceMode != 0 &&

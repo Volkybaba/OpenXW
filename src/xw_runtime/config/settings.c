@@ -120,6 +120,7 @@ static const XwSettingField g_fields[] = {
 	SETTING_STRING("ui.font", ui_font),
 	SETTING_INT("presentation.vsync_divisor", presentation.vsync_divisor, 1, 2),
 	SETTING_BOOL("presentation.hdr_output", presentation.hdr_output),
+	SETTING_FLOAT("presentation.brightness", presentation.brightness, 0.5, 3.0),
 	SETTING_BOOL("input.mouse_flight", mouse_flight),
 	SETTING_INT("input.mouse_sensitivity", mouse_sensitivity, 1, 9),
 	SETTING_BOOL("input.mouse_invert_y", mouse_invert_y),

@@ -9,6 +9,7 @@ bool XwSettingsMenu_Open(void);
 bool XwSettingsMenu_CapturesKeyboard(void);
 void XwSettingsMenu_Show(void);
 void XwSettingsMenu_RequestClose(void);
+void XwSettingsMenu_RequestAbortConfirmation(void);
 void XwSettingsMenu_ReportError(const char* error);
 bool XwSettingsMenu_BeginFrame(const AeronInputSnapshot* input);
 bool XwSettingsMenu_ConsumeRuntimeRequest(void);

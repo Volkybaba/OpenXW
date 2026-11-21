@@ -16,6 +16,8 @@ typedef struct XwPresentationSettings {
 	int vsync_divisor, hdr_output;
 	/* Negative gamma uses the platform default; zero is sRGB. Zero white is automatic. */
 	float sdr_gamma, paper_white_nits;
+	/* VolkyXWCD v7: user brightness, 0.5-3.0; 1.0 is identity. */
+	float brightness;
 } XwPresentationSettings;
 
 typedef struct XwMusicSettings {

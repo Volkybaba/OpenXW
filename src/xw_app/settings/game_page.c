@@ -1,6 +1,7 @@
 #include "xw_app/settings/game_page.h"
 #include "xw_app/settings/installation_page.h"
 #include "xw_app/settings/settings.h"
+#include "xw_runtime/runtime/flight_sim.h"
 #include "xw_runtime/runtime/profile.h"
 #include <string.h>
 
@@ -49,6 +50,11 @@ void XwGamePage_Draw(AeronUiContext* ui, const AeronInputSnapshot* input) {
 	XwShellPreferences* p = &draft->game.preferences;
 	if (!AeronUi_BeginScroll(ui, "Game settings", XwSettingsMenu_ScrollHeight()))
 		return;
+	if (XwFlightSim_IsActive() && XwFlightSim_IsPlayerControl()) {
+		AeronUi_Header(ui, "Mission");
+		if (AeronUi_Button(ui, "Abort Mission"))
+			XwSettingsMenu_RequestAbortConfirmation();
+	}
 	AeronUi_Header(ui, "Version Selection");
 	XwGameVersion frontend = VersionSelector(ui, "Cutscenes and Menus", draft->frontend_version, false, NULL);
 	if (frontend != XwProfile_Frontend()->version)

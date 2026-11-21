@@ -8,6 +8,7 @@
 #include "xw_dos94/render/display.h"
 #include "xw_runtime/runtime/presentation.h"
 #endif
+#include <aeron/scene/present.h>
 #include <limits.h>
 #include <stdio.h>
 
@@ -24,7 +25,7 @@ void FlightScreenshot_Capture(void) {
 		int screenshotIndex = 0;
 		XwFile* existingFile;
 		do {
-			sprintf(fileName, "tiescreen%d.bmp", screenshotIndex);
+			sprintf(fileName, "flightscreen%d.bmp", screenshotIndex);
 			existingFile = File_RawOpen(fileName, "rb");
 			if (existingFile != NULL) {
 				File_RawClose(existingFile);
@@ -38,18 +39,24 @@ void FlightScreenshot_Capture(void) {
 		unsigned i;
 		if (!d || !d->generation)
 			return;
+		/* VolkyXWCD v7: brightness — same half-gamma as the live display. */
 		for (i = 0; i < 256; ++i) {
 			const uint8_t* rgb = (const uint8_t*)&d->palette[i];
-			palette[i] = (AeronRgbQuad) { rgb[2], rgb[1], rgb[0], 0 };
+			palette[i] = (AeronRgbQuad) { AeronScenePresent_BrightenSrgb8(rgb[2]),
+										  AeronScenePresent_BrightenSrgb8(rgb[1]),
+										  AeronScenePresent_BrightenSrgb8(rgb[0]), 0 };
 		}
 		FrontImage_SaveBmpFile(fileName, d->published, 320, 200, 320, 8, 0, palette);
 		return;
 	}
 #endif
 	for (paletteIndex = 0; paletteIndex < FLIGHT_DISPLAY_PALETTE_ENTRIES; ++paletteIndex) {
-		palette[paletteIndex].rgbBlue = g_directDrawPaletteEntries[paletteIndex].blue;
-		palette[paletteIndex].rgbGreen = g_directDrawPaletteEntries[paletteIndex].green;
-		palette[paletteIndex].rgbRed = g_directDrawPaletteEntries[paletteIndex].red;
+		palette[paletteIndex].rgbBlue =
+			AeronScenePresent_BrightenSrgb8(g_directDrawPaletteEntries[paletteIndex].blue);
+		palette[paletteIndex].rgbGreen =
+			AeronScenePresent_BrightenSrgb8(g_directDrawPaletteEntries[paletteIndex].green);
+		palette[paletteIndex].rgbRed =
+			AeronScenePresent_BrightenSrgb8(g_directDrawPaletteEntries[paletteIndex].red);
 		palette[paletteIndex].rgbReserved = 0;
 	}
 	lockCount = FlightDisplay_GetSurfaceLockCount();

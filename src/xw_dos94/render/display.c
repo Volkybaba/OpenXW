@@ -1,6 +1,7 @@
 #include "xw_dos94/render/display.h"
 #include "xw_runtime/snapshot/render_hud.h"
 
+#include <aeron/scene/present.h>
 #include "xw/flight/feinput.h"
 #include "xw/flight/flight_display.h"
 #include "xw/flight/hud/festring.h"
@@ -160,10 +161,41 @@ void Dos94Display_Publish(void) {
 	}
 }
 
+/* VolkyXWCD v7: brightness — a brightened copy of the palette, rebuilt
+ * when the source palette or the brightness changes; the source palette
+ * stays pristine. The layer generation bumps with the brightness so the
+ * upload cache re-uploads the re-paletted frame. */
+static AeronPaletteEntry bright_palette[256];
+static AeronPaletteEntry last_source_palette[256];
+static float submit_brightness = 1.0f;
+static uint32_t bright_epoch = 0;
+
 void Dos94Display_Submit(void) {
 	Dos94Display* d = Dos94_display;
+	const AeronPaletteEntry* palette;
+	uint32_t generation;
+	float brightness;
 	if (!d || !d->generation || Aeron_FatalErrorRequested())
 		return;
+	palette = d->palette;
+	generation = d->generation;
+	brightness = AeronScenePresent_Brightness();
+	if (brightness != 1.0f) {
+		if (brightness != submit_brightness ||
+		    memcmp(d->palette, last_source_palette, sizeof last_source_palette) != 0) {
+			for (int i = 0; i < 256; ++i) {
+				bright_palette[i].r = AeronScenePresent_BrightenSrgb8(d->palette[i].r);
+				bright_palette[i].g = AeronScenePresent_BrightenSrgb8(d->palette[i].g);
+				bright_palette[i].b = AeronScenePresent_BrightenSrgb8(d->palette[i].b);
+				bright_palette[i].a = d->palette[i].a;
+			}
+			memcpy(last_source_palette, d->palette, sizeof last_source_palette);
+			submit_brightness = brightness;
+			++bright_epoch;
+		}
+		palette = bright_palette;
+		generation = d->generation + bright_epoch;
+	}
 	const AeronPixelLayerDesc layer = { .frame = { .pixels = d->published,
 												   .width = 320,
 												   .height = 200,
@@ -171,8 +203,8 @@ void Dos94Display_Submit(void) {
 												   .bpp = 8,
 												   .format = AERON_PIXEL_FORMAT_INDEX8,
 												   .color_space = AERON_COLOR_SPACE_SRGB,
-												   .palette = d->palette,
-												   .generation = d->generation },
+												   .palette = palette,
+												   .generation = generation },
 										.logical_rect = XwPresentation_ClassicRect(),
 										.blend_mode = AERON_LAYER_BLEND_OPAQUE,
 										.sampling = AERON_PIXEL_SAMPLING_SHARP_BILINEAR };

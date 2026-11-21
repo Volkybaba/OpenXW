@@ -228,6 +228,7 @@ input:
 presentation:
   vsync_divisor: 1
   hdr_output: true
+  brightness: 1.0
   sdr_gamma: auto
   paper_white_nits: auto
 game:

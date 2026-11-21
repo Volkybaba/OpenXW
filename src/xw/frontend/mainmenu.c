@@ -457,6 +457,10 @@ void mainmenu_draw_Title(Actor* actor, Rect* frame, Rect* clip, int16_t x, int16
 	xfont_Print_Centered_Text(text, &labelRect, MAINMENU_TITLE_FONT, MAINMENU_TITLE_SHADOW_COLOR);
 	xrect_Offset_Rect(&labelRect, -MAINMENU_TITLE_SHADOW_OFFSET, -MAINMENU_TITLE_SHADOW_OFFSET);
 	xfont_Print_Centered_Text(text, &labelRect, MAINMENU_TITLE_FONT, MAINMENU_TITLE_TEXT_COLOR);
+	/* VolkyXWCD v1: version stamp, bottom-right of the 640x480 menu. */
+	xrect_Set_Rect(&labelRect, 500, 462, 636, 478);
+	xfont_Print_Centered_Text("VolkyXWCD 0.50", &labelRect, MAINMENU_TITLE_FONT,
+							  MAINMENU_TITLE_TEXT_COLOR);
 }
 
 // FUNCTION: XW 0x458AA0
